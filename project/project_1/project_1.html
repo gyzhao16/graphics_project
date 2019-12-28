@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style type="text/css">
+			#class1 {
+				display: table;
+				width: 100%;
+				height: 100%;
+			}
+			#class2 {
+				display: table-cell;
+				vertical-align: middle;
+				padding-left: 25%;
+				padding-right: 25%;
+			}
+			#message {
+				color: #222222;
+				opacity: 0;
+				transition: opacity 1s;
+				-moz_transition: opacity 1s;
+				-webkit-transition: opacity 1s;
+				-o-transition: opacity 1s;
+			}
+			#message.show  {
+				opacity: 1;
+			}
+			#message2 {
+				color: #222222;
+				opacity: 0;
+				transition: opacity 1s;
+				-moz_transition: opacity 1s;
+				-webkit-transition: opacity 1s;
+				-o-transition: opacity 1s;
+			}
+			#message2.show  {
+				opacity: 1;
+			}
+		</style>
+		<script type="text/javascript">
+
+			var AudioContext = window.AudioContext || window.webkitAudioContext;
+			var audioContext;
+			var file, input_file;
+			var BufferSourceNode, AnalyserNode;
+			var canvas, ctx;
+
+			var LoadFile = function() {
+		    	var fileReader = new FileReader();
+		    	fileReader.onload = function(e) {
+		    	    input_file = e.target.result;
+		    	    DecodeMusic();
+		    	}
+		    	fileReader.readAsArrayBuffer(file);
+			}
+
+			var DecodeMusic = function() {
+    			audioContext.decodeAudioData(input_file,
+    										function(buffer) {
+    		    								MusicProcess(buffer);
+    										});
+			}
+
+			var MusicProcess = function(buffer) {
+			    if(BufferSourceNode) {
+			        BufferSourceNode.stop();
+		    	}
+		    	BufferSourceNode = audioContext.createBufferSource();
+		    	BufferSourceNode.connect(AnalyserNode);
+		    	AnalyserNode.connect(audioContext.destination);
+		    	BufferSourceNode.buffer = buffer;
+		    	BufferSourceNode.start(0);
+		    	ShowMessage(false);
+		    	ShowMessage2(true);
+		    	window.requestAnimationFrame(render);
+			}
+
+			var ShowMessage = function(bool_value) {
+			    var message = document.getElementById('message');
+			    if(bool_value) {
+			        message.className = "show";
+			    }
+			    else {
+			        message.className = "";
+			    }
+			}
+
+			var ShowMessage2 = function(bool_value) {
+				var message2 = document.getElementById('message2');
+				if(bool_value) {
+					message2.className = "show";
+				}
+				else {
+					message2.className = "";
+				}
+			}
+
+			var render = function() {
+			    ctx = canvas.getContext("2d");
+			    ctx.strokeStyle = "#9900FF";
+			    ctx.lineWidth = 2;
+			    ctx.clearRect(0, 0, canvas.width, canvas.height);
+			    var MusicArray = new Uint8Array(AnalyserNode.frequencyBinCount);
+			    AnalyserNode.getByteFrequencyData(MusicArray);
+			    
+			    var step = Math.round(MusicArray.length / 60);
+			    for (var i = 0; i < 40; i++) {
+			    	var energy = (MusicArray[step * i] / 256.0) * 50;
+			    	for (var j = 0; j < energy; j++) {
+			    		ctx.beginPath();
+			            ctx.moveTo(10 * i + 2, 200 + 4 * j);
+            			ctx.lineTo(10 * (i + 1) - 2, 200 + 4 * j);
+			            ctx.stroke();
+            			ctx.beginPath();
+			            ctx.moveTo(10 * i + 2, 200 - 4 * j);
+            			ctx.lineTo(10 * (i + 1) - 2, 200 - 4 * j);
+			            ctx.stroke();
+			    	}
+			    	ctx.beginPath();
+			        ctx.moveTo(10 * i + 2, 200);
+			        ctx.lineTo(10 * (i + 1) - 2, 200);
+    			    ctx.stroke();
+			    }
+
+			    window.requestAnimationFrame(render);
+			}
+
+			window.onload = function() {
+			    audioContext = new AudioContext();
+			    AnalyserNode = audioContext.createAnalyser();
+			    AnalyserNode.fftSize = 256;
+			    var FileSelector = document.getElementById('fileSelector');
+			    FileSelector.onchange = function() {
+			        if (FileSelector.files[0]) {
+			            file = FileSelector.files[0];
+			            ShowMessage(true);
+			            LoadFile();
+			        }
+			    }
+			    canvas = document.getElementById('canvas');
+			}
+		</script>
+	</head>
+	<body style="background-color: #ffffff">
+		<h4>Graphics Project 1: Music Visualization</h4>
+		<div id="class1">
+			<div id="class2">
+				<p id="message">Processing...</p>
+				<input style="color: #222222" type="file" id="fileSelector">
+				<br>
+				<p id="message2">Visualizing the Music as Below:</p>
+				<canvas id="canvas"
+						width="600"
+						height="400">
+						</canvas>
+			</div>
+		</div>
+	</body>
+</html>
